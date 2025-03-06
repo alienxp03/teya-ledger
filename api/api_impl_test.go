@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/alienxp03/teya-ledger/handler/transaction"
+	"github.com/alienxp03/teya-ledger/storage"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -138,6 +139,15 @@ func TestCreateDeposit(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name:    "invalid currency",
+			args:    args{userToken: "USER_TOKEN_1"},
+			reqBody: map[string]interface{}{"transactionID": "idempotency-key", "accountNumber": "ACCOUNT_NUMBER_1", "amount": 100, "currency": "USD", "description": "description"},
+			setup: func() setup {
+				return setup{&MockTransactioner{}}
+			}(),
+			wantErr: true,
+		},
+		{
 			name:    "logic error",
 			args:    args{userToken: "USER_TOKEN_1"},
 			reqBody: map[string]interface{}{"transactionID": "idempotency-key", "accountNumber": "ACCOUNT_NUMBER_1", "amount": 100, "currency": "MYR", "description": "description"},
@@ -225,6 +235,15 @@ func TestCreateWithdrawal(t *testing.T) {
 			name:    "positive amount",
 			args:    args{userToken: "USER_TOKEN_1"},
 			reqBody: map[string]interface{}{"transactionID": "idempotency-key", "accountNumber": "ACCOUNT_NUMBER_1", "amount": 100, "currency": "MYR", "description": "withdrawal description"},
+			setup: func() setup {
+				return setup{&MockTransactioner{}}
+			}(),
+			wantErr: true,
+		},
+		{
+			name:    "invalid currency",
+			args:    args{userToken: "USER_TOKEN_1"},
+			reqBody: map[string]interface{}{"transactionID": "idempotency-key", "accountNumber": "ACCOUNT_NUMBER_1", "amount": 100, "currency": "USD", "description": "withdrawal description"},
 			setup: func() setup {
 				return setup{&MockTransactioner{}}
 			}(),
@@ -355,12 +374,108 @@ func TestGetBalance(t *testing.T) {
 	}
 }
 
+func TestGetTransactionStatus(t *testing.T) {
+	type args struct {
+		userToken string
+	}
+	type setup struct {
+		mockTransactioner *MockTransactioner
+	}
+
+	tests := []struct {
+		name    string
+		args    args
+		setup   setup
+		want    GetTransactionResponse
+		wantErr bool
+	}{
+		{
+			name: "success",
+			args: args{userToken: "USER_TOKEN_1"},
+			setup: func() setup {
+				mockTransactioner := &MockTransactioner{
+					GetTransactionFunc: func(userID string, transactionID string) (*transaction.Transaction, error) {
+						return &transaction.Transaction{
+							TransactionID: "TRANSACTION_ID_1",
+							Status:        "completed",
+							Amount:        100,
+							Currency:      "MYR",
+							Description:   "test transaction",
+						}, nil
+					},
+				}
+				return setup{mockTransactioner}
+			}(),
+			want: GetTransactionResponse{
+				Transaction{
+					TransactionID: "TRANSACTION_ID_1",
+					Status:        "completed",
+					Amount:        100,
+					Currency:      "MYR",
+					Description:   "test transaction",
+					CreatedAt:     "0001-01-01T00:00:00Z",
+					UpdatedAt:     "0001-01-01T00:00:00Z",
+				},
+			},
+		},
+		{
+			name: "transaction not found",
+			args: args{userToken: "USER_TOKEN_1"},
+			setup: func() setup {
+				mockTransactioner := &MockTransactioner{
+					GetTransactionFunc: func(userID string, transactionID string) (*transaction.Transaction, error) {
+						return nil, storage.ErrNotFound
+					},
+				}
+				return setup{mockTransactioner}
+			}(),
+			wantErr: true,
+		},
+		{
+			name: "logic error",
+			args: args{userToken: "USER_TOKEN_1"},
+			setup: func() setup {
+				mockTransactioner := &MockTransactioner{
+					GetTransactionFunc: func(userID string, transactionID string) (*transaction.Transaction, error) {
+						return nil, errors.New("logic error")
+					},
+				}
+				return setup{mockTransactioner}
+			}(),
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			api := New(tt.setup.mockTransactioner)
+
+			req, _ := http.NewRequest("GET", "/api/v1/transactions/TRANSACTION_ID_1", nil)
+			req.Header.Set("Authorization", tt.args.userToken)
+			r := httptest.NewRecorder()
+			api.ServeHTTP(r, req)
+
+			if tt.wantErr {
+				assert.Equal(t, http.StatusBadRequest, r.Code)
+				return
+			}
+
+			assert.Equal(t, http.StatusOK, r.Code)
+			var resp GetTransactionResponse
+			err := json.Unmarshal(r.Body.Bytes(), &resp)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.want, resp)
+		})
+	}
+}
+
 // MockTransactioner is a mock implementation of the Transactioner interface
 type MockTransactioner struct {
 	GetTransactionsFunc  func(userID string, req transaction.GetTransactionsRequest) (*transaction.GetTransactionsResponse, error)
 	CreateDepositFunc    func(userID string, req transaction.CreateDepositRequest) (*transaction.CreateDepositResponse, error)
 	CreateWithdrawalFunc func(userID string, req transaction.CreateWithdrawalRequest) (*transaction.CreateWithdrawalResponse, error)
 	GetBalanceFunc       func(userID string, req transaction.GetBalanceRequest) (*transaction.GetBalanceResponse, error)
+	GetTransactionFunc   func(userID string, transactionID string) (*transaction.Transaction, error)
 }
 
 func (m *MockTransactioner) GetTransactions(userID string, req transaction.GetTransactionsRequest) (*transaction.GetTransactionsResponse, error) {
@@ -377,4 +492,8 @@ func (m *MockTransactioner) CreateWithdrawal(userID string, req transaction.Crea
 
 func (m *MockTransactioner) GetBalance(userID string, req transaction.GetBalanceRequest) (*transaction.GetBalanceResponse, error) {
 	return m.GetBalanceFunc(userID, req)
+}
+
+func (m *MockTransactioner) GetTransaction(userID string, transactionID string) (*transaction.Transaction, error) {
+	return m.GetTransactionFunc(userID, transactionID)
 }

@@ -3,38 +3,25 @@ package api
 import (
 	"fmt"
 	"net/http"
+	"path"
 	"strconv"
 	"time"
 
 	"github.com/alienxp03/teya-ledger/handler/transaction"
 )
 
-func New(transactioner transaction.Transactioner) *APIImpl {
-	return &APIImpl{
-		transactioner: transactioner,
-	}
-}
-
 func (a *APIImpl) setupRoutes() {
-	mux := http.NewServeMux()
+	a.mux = http.NewServeMux()
 
-	// Deposits
-	mux.Handle("POST /api/v1/deposits", AuthMiddleware(http.HandlerFunc(a.createDeposit)))
-
-	// Withdrawals
-	mux.Handle("POST /api/v1/withdrawals", AuthMiddleware(http.HandlerFunc(a.createWithdrawal)))
-
-	// Current balance
-	mux.Handle("GET /api/v1/balances", AuthMiddleware(http.HandlerFunc(a.getBalance)))
-
-	// Transaction history
-	mux.Handle("GET /api/v1/transactions", AuthMiddleware(http.HandlerFunc(a.getTransactions)))
-
-	a.mux = mux
+	a.mux.Handle("POST /api/v1/deposits", AuthMiddleware(http.HandlerFunc(a.createDeposit)))
+	a.mux.Handle("POST /api/v1/withdrawals", AuthMiddleware(http.HandlerFunc(a.createWithdrawal)))
+	a.mux.Handle("GET /api/v1/balances", AuthMiddleware(http.HandlerFunc(a.getBalance)))
+	a.mux.Handle("GET /api/v1/transactions", AuthMiddleware(http.HandlerFunc(a.getTransactions)))
+	a.mux.Handle("GET /api/v1/transactions/{transactionID}", AuthMiddleware(http.HandlerFunc(a.getTransaction)))
 }
 
 func (a *APIImpl) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	a.once.Do(a.setupRoutes)
+	a.setupRoutes()
 	fmt.Printf("Request received: %s %s\n", r.Method, r.URL.Path)
 	a.mux.ServeHTTP(w, r)
 }
@@ -204,4 +191,30 @@ func getBalancesParams(r *http.Request) *transaction.GetBalanceRequest {
 	}
 
 	return req
+}
+
+func (a *APIImpl) getTransaction(w http.ResponseWriter, r *http.Request) {
+	userID, _ := r.Context().Value(HeaderUserID).(string)
+	transactionID := path.Base(r.URL.Path)
+
+	transaction, err := a.transactioner.GetTransaction(userID, transactionID)
+	if err != nil {
+		a.respondError(w, http.StatusBadRequest, err, fmt.Sprintf("Failed to get transaction: %+v", err))
+		return
+	}
+	fmt.Printf("etransaction get: %+v\n", transaction)
+
+	result := GetTransactionResponse{
+		Transaction: Transaction{
+			TransactionID: transaction.TransactionID,
+			Status:        transaction.Status,
+			Amount:        transaction.Amount,
+			Currency:      transaction.Currency,
+			Description:   transaction.Description,
+			CreatedAt:     transaction.CreatedAt.Format(time.RFC3339),
+			UpdatedAt:     transaction.UpdatedAt.Format(time.RFC3339),
+		},
+	}
+
+	a.respond(w, http.StatusOK, result)
 }

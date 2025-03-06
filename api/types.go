@@ -42,6 +42,14 @@ type GetBalanceResponse struct {
 	Balance Balance `json:"balance"`
 }
 
+type GetTransactionRequest struct {
+	TransactionID string `json:"transactionID" validate:"required"`
+}
+
+type GetTransactionResponse struct {
+	Transaction Transaction `json:"transaction"`
+}
+
 type Balance struct {
 	Amount   int64  `json:"amount"`
 	Currency string `json:"currency"`

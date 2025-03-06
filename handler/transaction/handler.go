@@ -1,6 +1,9 @@
 package transaction
 
 import (
+	"fmt"
+	"time"
+
 	"github.com/alienxp03/teya-ledger/storage"
 	"github.com/alienxp03/teya-ledger/types"
 )
@@ -11,6 +14,7 @@ type Transactioner interface {
 	CreateDeposit(userID string, req CreateDepositRequest) (*CreateDepositResponse, error)
 	CreateWithdrawal(userID string, req CreateWithdrawalRequest) (*CreateWithdrawalResponse, error)
 	GetBalance(userID string, req GetBalanceRequest) (*GetBalanceResponse, error)
+	GetTransaction(userID string, transactionID string) (*Transaction, error)
 }
 
 type TransactionHandler struct {
@@ -45,6 +49,9 @@ func (t TransactionHandler) CreateDeposit(userID string, req CreateDepositReques
 	if err := t.storage.UpdateBalance(userID, req.AccountNumber, int64(req.Amount)); err != nil {
 		return nil, types.NewBadRequest(types.BadRequest, err.Error())
 	}
+
+	// Start background status update
+	t.updateTransaction(transaction.TransactionID)
 
 	return &CreateDepositResponse{Transaction: Transaction{
 		TransactionID: transaction.TransactionID,
@@ -84,7 +91,6 @@ func (t TransactionHandler) CreateWithdrawal(userID string, req CreateWithdrawal
 		return nil, types.NewNotFound(err.Error())
 	}
 
-	// Check balance
 	balance, err := t.storage.GetBalance(userID, req.AccountNumber)
 	if err != nil {
 		return nil, types.NewBadRequest(types.BadRequest, err.Error())
@@ -107,10 +113,11 @@ func (t TransactionHandler) CreateWithdrawal(userID string, req CreateWithdrawal
 		return nil, err
 	}
 
-	// Update balance
 	if err := t.storage.UpdateBalance(userID, req.AccountNumber, int64(req.Amount)); err != nil {
 		return nil, types.NewBadRequest(types.BadRequest, err.Error())
 	}
+
+	t.updateTransaction(transaction.TransactionID)
 
 	return &CreateWithdrawalResponse{Transaction: Transaction{
 		TransactionID: transaction.TransactionID,
@@ -140,4 +147,33 @@ func (h *TransactionHandler) GetBalance(userID string, req GetBalanceRequest) (*
 		Amount:   balance.Amount,
 		Currency: balance.Currency,
 	}, nil
+}
+
+// GetTransaction retrieves the current status of a transaction
+func (t TransactionHandler) GetTransaction(userID string, transactionID string) (*Transaction, error) {
+	transaction, err := t.storage.GetTransaction(userID, transactionID)
+	if err != nil {
+		return nil, types.NewNotFound("transaction not found")
+	}
+
+	return &Transaction{
+		TransactionID: transaction.TransactionID,
+		Status:        transaction.Status,
+		Amount:        transaction.Amount,
+		Currency:      transaction.Currency,
+		Description:   transaction.Description,
+		CreatedAt:     transaction.CreatedAt,
+		UpdatedAt:     transaction.UpdatedAt,
+	}, nil
+}
+
+// updateTransaction updates the transaction status to completed after a delay to mock a background task
+func (t TransactionHandler) updateTransaction(transactionID string) {
+	go func() {
+		time.Sleep(200 * time.Millisecond)
+		if err := t.storage.UpdateTransaction(transactionID, "completed"); err != nil {
+			// Log error but don't return it since this is a background task
+			fmt.Printf("Error updating transaction status: %v\n", err)
+		}
+	}()
 }

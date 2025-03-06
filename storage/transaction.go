@@ -72,3 +72,23 @@ func (m *MemoryStorage) CreateWithdrawal(transaction *Transaction) (*Transaction
 
 	return transaction, nil
 }
+
+func (m *MemoryStorage) GetTransaction(userID, transactionID string) (*Transaction, error) {
+	for _, transaction := range m.transactions {
+		if transaction.UserID == userID && transaction.TransactionID == transactionID {
+			return transaction, nil
+		}
+	}
+	return nil, ErrNotFound
+}
+
+func (m *MemoryStorage) UpdateTransaction(transactionID string, status string) error {
+	for _, transaction := range m.transactions {
+		if transaction.TransactionID == transactionID {
+			transaction.Status = status
+			transaction.UpdatedAt = time.Now()
+			return nil
+		}
+	}
+	return ErrNotFound
+}

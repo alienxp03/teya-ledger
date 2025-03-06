@@ -6,6 +6,8 @@ type Storage interface {
 
 	CreateTransaction(transaction *Transaction) error
 	GetTransactions(userID, accountNumber string, limit, page int) ([]*Transaction, error)
+	GetTransaction(userID, transactionID string) (*Transaction, error)
+	UpdateTransaction(transactionID string, status string) error
 
 	CreateDeposit(transaction *Transaction) (*Transaction, error)
 	CreateWithdrawal(transaction *Transaction) (*Transaction, error)

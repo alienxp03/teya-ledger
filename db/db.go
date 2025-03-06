@@ -79,7 +79,7 @@ func (m *MemoryDB) SeedData() error {
 			TransactionID: "123456",
 			Status:        "success",
 			Amount:        100,
-			Currency:      "USD",
+			Currency:      "MYR",
 			Description:   "Payment for order 123456",
 			UserID:        "USER_ID_1",
 			AccountNumber: "ACCOUNT_NUMBER_1",
