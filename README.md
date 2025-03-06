@@ -190,7 +190,74 @@ A simple ledger API for managing transactions.
     }
     ```
 
-## Testing
+## Manual Tests
+
+- You can manually test the API using `curl` with the following steps (assuming you have the server running):
+
+  - Start the server
+  - Run the following commands:
+
+    - Get user balance
+
+    ```bash
+    curl -X GET "http://localhost:8080/api/v1/balances?accountNumber=ACCOUNT_NUMBER_1" \
+      -H "Authorization: USER_TOKEN_1"
+    ```
+
+    - Get transactions
+
+    ```bash
+    curl -X GET "http://localhost:8080/api/v1/transactions?accountNumber=ACCOUNT_NUMBER_1" \
+      -H "Authorization: USER_TOKEN_1"
+    ```
+
+    - Create deposit
+
+    ```bash
+    curl -X POST http://localhost:8080/api/v1/deposits \
+        -H "Authorization: USER_TOKEN_1" \
+        -H "Content-Type: application/json" \
+        -d '{
+        "transactionID": "REPLACE_UNIQUE_ID_1",
+        "accountNumber": "ACCOUNT_NUMBER_1",
+        "amount": 1000,
+        "currency": "MYR",
+        "description": "deposit description"
+        }'
+    ```
+
+    - Create withdrawal
+
+      ```bash
+      curl -X POST http://localhost:8080/api/v1/withdrawals \
+        -H "Authorization: USER_TOKEN_1" \
+        -H "Content-Type: application/json" \
+        -d '{
+        "transactionID": "REPLACE_UNIQUE_ID_2",
+        "accountNumber": "ACCOUNT_NUMBER_1",
+        "amount": -1,
+        "currency": "MYR",
+        "description": "withdrawal description"
+           }'
+      ```
+
+    - Get transaction details
+
+    ```bash
+    curl -X GET http://localhost:8080/api/v1/transactions/123456 \
+      -H "Authorization: USER_TOKEN_1"
+    ```
+
+    - Get user balance
+
+    ```bash
+    curl -X GET "http://localhost:8080/api/v1/balances?accountNumber=ACCOUNT_NUMBER_1" \
+      -H "Authorization: USER_TOKEN_1"
+    ```
+
+## Automated Tests
+
+- You can refer to api.hurl file for the integration tests.
 
 ### Running Tests
 
@@ -200,10 +267,15 @@ A simple ledger API for managing transactions.
    make test
    ```
 
-2. API tests:
+2. API tests
+
+   - Integration tests using hurl
+   - Requires `hurl` to be installed
+   - Requires server to be running
 
    ```bash
-   make api_test
+   make run       # Start server
+   make api_test  # Run tests
    ```
 
 3. Coverage report:
@@ -221,7 +293,11 @@ A simple ledger API for managing transactions.
 
 2. API tests:
 
+   - Integration tests using hurl
+   - Requires server to be running
+
    ```bash
+   make docker
    make docker-api-test
    ```
 

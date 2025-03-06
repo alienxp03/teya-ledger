@@ -15,6 +15,7 @@ func AuthMiddleware(next http.Handler) http.Handler {
 		}
 
 		// resolve userID
+		// ideally we should query from the database to get the userID
 		userID := strings.ReplaceAll(authHeader, "USER_TOKEN", "USER_ID")
 
 		ctx := context.WithValue(r.Context(), HeaderUserID, userID)
