@@ -21,7 +21,7 @@ type Transaction struct {
 	ID            int
 	TransactionID string
 	Status        string
-	Amount        int
+	Amount        int64
 	Currency      string
 	UserID        string
 	Description   string

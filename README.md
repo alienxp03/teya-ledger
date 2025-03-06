@@ -72,14 +72,30 @@ A simple ledger API for managing transactions.
 
 - **POST** `/api/v1/deposits`
   - Create a new deposit transaction
+  - Each request will create a new transaction with a status of `pending`.
+  - The transaction will be updated to `completed` after a delay of 200ms.
   - Request body:
     ```json
     {
       "transactionID": "string",      # required, must be unique for each request. Ideally UUID
       "accountNumber": "string",      # required
-      "amount": number,               # required, must be positive
+      "amount": number,               # required, must be positive. In cents value
       "currency": "string",           # required, only "MYR" is supported
       "description": "string"         # required
+    }
+    ```
+  - Response:
+    ```json
+    {
+      "transaction": {
+        "transactionID": "string",
+        "status": "string",
+        "amount": number,
+        "currency": "string",
+        "description": "string",
+        "createdAt": "string",
+        "updatedAt": "string"
+      }
     }
     ```
 
@@ -92,9 +108,23 @@ A simple ledger API for managing transactions.
     {
       "transactionID": "string",  # required, must be unique for each request. Ideally UUID
       "accountNumber": "string",  # required
-      "amount": number,           # required, must be negative
+      "amount": number,           # required, must be negative. In cents value
       "currency": "string",       # required, only "MYR" is supported
       "description": "string"     # required
+    }
+    ```
+  - Response:
+    ```json
+    {
+      "transaction": {
+        "transactionID": "string",
+        "status": "string",
+        "amount": number,
+        "currency": "string",
+        "description": "string",
+        "createdAt": "string",
+        "updatedAt": "string"
+      }
     }
     ```
 
@@ -104,6 +134,15 @@ A simple ledger API for managing transactions.
   - Get the current balance for an account
   - Query parameters:
     - `accountNumber`: The account number to check balance for. Required.
+  - Response:
+    ```json
+    {
+      "balance": {
+        "amount": number,
+        "currency": "string"
+      }
+    }
+    ```
 
 ### Transactions
 
@@ -114,12 +153,42 @@ A simple ledger API for managing transactions.
     - `accountNumber`: Filter by account number. Required.
     - `limit`: Maximum number of transactions to return (default: 10)
     - `page`: Page number for pagination (default: 1)
+  - Response:
+    ```json
+    {
+      "transactions": [
+        {
+          "transactionID": "string",
+          "status": "string",
+          "amount": number,
+          "currency": "string",
+          "description": "string",
+          "createdAt": "string",
+          "updatedAt": "string"
+        }
+      ]
+    }
+    ```
 
 - **GET** `/api/v1/transactions/{transactionID}`
 
   - Get details of a specific transaction
   - Path parameters:
     - `transactionID`: The ID of the transaction to retrieve
+  - Response:
+    ```json
+    {
+      "transaction": {
+        "transactionID": "string",
+        "status": "string",
+        "amount": number,
+        "currency": "string",
+        "description": "string",
+        "createdAt": "string",
+        "updatedAt": "string"
+      }
+    }
+    ```
 
 ## Testing
 
@@ -160,4 +229,3 @@ A simple ledger API for managing transactions.
    ```bash
    make docker-coverage
    ```
-

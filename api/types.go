@@ -13,7 +13,7 @@ type GetTransactionsResponse struct {
 type CreateDepositRequest struct {
 	TransactionID string `validate:"required"`
 	AccountNumber string `validate:"required"`
-	Amount        int    `validate:"required,gte=0"`
+	Amount        int64  `validate:"required,gte=0"`
 	Currency      string `validate:"required,oneof=MYR"`
 	Description   string `validate:"required"`
 }
@@ -25,7 +25,7 @@ type CreateDepositResponse struct {
 type CreateWithdrawalRequest struct {
 	TransactionID string `validate:"required"`
 	AccountNumber string `validate:"required"`
-	Amount        int    `validate:"required,lte=0"`
+	Amount        int64  `validate:"required,lte=0"`
 	Currency      string `validate:"required,oneof=MYR"`
 	Description   string `validate:"required"`
 }
@@ -58,7 +58,7 @@ type Balance struct {
 type Transaction struct {
 	TransactionID string `json:"transactionID"`
 	Status        string `json:"status"`
-	Amount        int    `json:"amount"`
+	Amount        int64  `json:"amount"`
 	Currency      string `json:"currency"`
 	Description   string `json:"description"`
 	CreatedAt     string `json:"createdAt"`

@@ -46,7 +46,7 @@ func (t TransactionHandler) CreateDeposit(userID string, req CreateDepositReques
 	}
 
 	// Update balance
-	if err := t.storage.UpdateBalance(userID, req.AccountNumber, int64(req.Amount)); err != nil {
+	if err := t.storage.UpdateBalance(userID, req.AccountNumber, req.Amount); err != nil {
 		return nil, types.NewBadRequest(types.BadRequest, err.Error())
 	}
 
@@ -96,7 +96,7 @@ func (t TransactionHandler) CreateWithdrawal(userID string, req CreateWithdrawal
 		return nil, types.NewBadRequest(types.BadRequest, err.Error())
 	}
 
-	if balance.Amount < int64(req.Amount) {
+	if balance.Amount < -req.Amount {
 		return nil, types.NewBadRequest(types.ErrorCodeInvalidAmount, "insufficient balance")
 	}
 
@@ -113,7 +113,7 @@ func (t TransactionHandler) CreateWithdrawal(userID string, req CreateWithdrawal
 		return nil, err
 	}
 
-	if err := t.storage.UpdateBalance(userID, req.AccountNumber, int64(req.Amount)); err != nil {
+	if err := t.storage.UpdateBalance(userID, req.AccountNumber, req.Amount); err != nil {
 		return nil, types.NewBadRequest(types.BadRequest, err.Error())
 	}
 

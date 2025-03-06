@@ -248,6 +248,22 @@ HTTP 400
 [Asserts]
 jsonpath "$.message" contains "Invalid"
 
+# POST withdrawals with huge amount
+POST http://{{host}}/api/v1/withdrawals
+Authorization: USER_TOKEN_1
+Content-Type: application/json
+{
+    "transactionID": "{{newUuid}}",
+    "accountNumber": "ACCOUNT_NUMBER_1",
+    "amount": -99999999999999,
+    "currency": "MYR",
+    "description": "withdrawal description"
+}
+HTTP 400
+[Asserts]
+jsonpath "$.message" contains "insufficient balance"
+
+
 # Get balance
 GET http://{{host}}/api/v1/balances?accountNumber=ACCOUNT_NUMBER_1
 Authorization: USER_TOKEN_1

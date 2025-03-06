@@ -15,7 +15,7 @@ type GetTransactionsResponse struct {
 type CreateDepositRequest struct {
 	TransactionID string
 	AccountNumber string
-	Amount        int
+	Amount        int64
 	Currency      string
 	Description   string
 }
@@ -27,7 +27,7 @@ type CreateDepositResponse struct {
 type CreateWithdrawalRequest struct {
 	TransactionID string
 	AccountNumber string
-	Amount        int
+	Amount        int64
 	Currency      string
 	Description   string
 }
@@ -39,7 +39,7 @@ type CreateWithdrawalResponse struct {
 type Transaction struct {
 	TransactionID string
 	Status        string
-	Amount        int
+	Amount        int64
 	Currency      string
 	Description   string
 	CreatedAt     time.Time
