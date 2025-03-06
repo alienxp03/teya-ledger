@@ -50,6 +50,9 @@ func TestCreateDeposit(t *testing.T) {
 							UpdatedAt:     time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC),
 						}, nil
 					},
+					UpdateBalanceFunc: func(userID string, accountNumber string, amount int64) error {
+						return nil
+					},
 				}
 				return setup{mockStorage}
 			}(),
@@ -261,6 +264,12 @@ func TestCreateWithdrawal(t *testing.T) {
 							UpdatedAt:     time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC),
 						}, nil
 					},
+					GetBalanceFunc: func(userID string, accountNumber string) (*storage.Balance, error) {
+						return &storage.Balance{Amount: 1000, Currency: "MYR"}, nil
+					},
+					UpdateBalanceFunc: func(userID string, accountNumber string, amount int64) error {
+						return nil
+					},
 				}
 				return setup{mockStorage}
 			}(),
@@ -311,6 +320,9 @@ func TestCreateWithdrawal(t *testing.T) {
 					CreateWithdrawalFunc: func(transaction *storage.Transaction) (*storage.Transaction, error) {
 						return nil, errors.New("saving error")
 					},
+					GetBalanceFunc: func(userID string, accountNumber string) (*storage.Balance, error) {
+						return &storage.Balance{Amount: 1000, Currency: "MYR"}, nil
+					},
 				}
 				return setup{mockStorage}
 			}(),
@@ -341,6 +353,8 @@ type MockStorage struct {
 	GetTransactionsFunc   func(userID, accountNumber string, limit, page int) ([]*storage.Transaction, error)
 	CreateDepositFunc     func(transaction *storage.Transaction) (*storage.Transaction, error)
 	CreateWithdrawalFunc  func(transaction *storage.Transaction) (*storage.Transaction, error)
+	GetBalanceFunc        func(userID string, accountNumber string) (*storage.Balance, error)
+	UpdateBalanceFunc     func(userID string, accountNumber string, amount int64) error
 }
 
 func (m *MockStorage) CreateAccount(account storage.Account) (*storage.Account, error) {
@@ -365,4 +379,12 @@ func (m *MockStorage) GetAccount(userID string, accountNumber string) (*storage.
 
 func (m *MockStorage) CreateWithdrawal(transaction *storage.Transaction) (*storage.Transaction, error) {
 	return m.CreateWithdrawalFunc(transaction)
+}
+
+func (m *MockStorage) GetBalance(userID string, accountNumber string) (*storage.Balance, error) {
+	return m.GetBalanceFunc(userID, accountNumber)
+}
+
+func (m *MockStorage) UpdateBalance(userID string, accountNumber string, amount int64) error {
+	return m.UpdateBalanceFunc(userID, accountNumber, amount)
 }

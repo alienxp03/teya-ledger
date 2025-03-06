@@ -29,3 +29,10 @@ type Transaction struct {
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
 }
+
+type Balance struct {
+	UserID        string
+	AccountNumber string
+	Amount        int64
+	Currency      string
+}

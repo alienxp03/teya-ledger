@@ -9,15 +9,20 @@ type Storage interface {
 
 	CreateDeposit(transaction *Transaction) (*Transaction, error)
 	CreateWithdrawal(transaction *Transaction) (*Transaction, error)
+
+	GetBalance(userID string, accountNumber string) (*Balance, error)
+	UpdateBalance(userID string, accountNumber string, amount int64) error
 }
 
 type MemoryStorage struct {
 	accounts     []*Account
 	transactions []*Transaction
+	balances     []*Balance
 }
 
 func NewMemoryStorage() *MemoryStorage {
 	return &MemoryStorage{
 		transactions: []*Transaction{},
+		balances:     []*Balance{},
 	}
 }

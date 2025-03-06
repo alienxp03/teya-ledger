@@ -41,6 +41,11 @@ func (t TransactionHandler) CreateDeposit(userID string, req CreateDepositReques
 		return nil, err
 	}
 
+	// Update balance
+	if err := t.storage.UpdateBalance(userID, req.AccountNumber, int64(req.Amount)); err != nil {
+		return nil, types.NewBadRequest(types.BadRequest, err.Error())
+	}
+
 	return &CreateDepositResponse{Transaction: Transaction{
 		TransactionID: transaction.TransactionID,
 		Status:        transaction.Status,
@@ -79,7 +84,15 @@ func (t TransactionHandler) CreateWithdrawal(userID string, req CreateWithdrawal
 		return nil, types.NewNotFound(err.Error())
 	}
 
-	// TODO: Add check balance
+	// Check balance
+	balance, err := t.storage.GetBalance(userID, req.AccountNumber)
+	if err != nil {
+		return nil, types.NewBadRequest(types.BadRequest, err.Error())
+	}
+
+	if balance.Amount < int64(req.Amount) {
+		return nil, types.NewBadRequest(types.ErrorCodeInvalidAmount, "insufficient balance")
+	}
 
 	transaction, err := t.storage.CreateWithdrawal(&storage.Transaction{
 		TransactionID: req.TransactionID,
@@ -92,6 +105,11 @@ func (t TransactionHandler) CreateWithdrawal(userID string, req CreateWithdrawal
 	})
 	if err != nil {
 		return nil, err
+	}
+
+	// Update balance
+	if err := t.storage.UpdateBalance(userID, req.AccountNumber, int64(req.Amount)); err != nil {
+		return nil, types.NewBadRequest(types.BadRequest, err.Error())
 	}
 
 	return &CreateWithdrawalResponse{Transaction: Transaction{
@@ -108,25 +126,18 @@ func (t TransactionHandler) CreateWithdrawal(userID string, req CreateWithdrawal
 // GetBalance retrieves the current balance for an account
 func (h *TransactionHandler) GetBalance(userID string, req GetBalanceRequest) (*GetBalanceResponse, error) {
 	// Validate that the account belongs to the user
-	_, err := h.storage.GetAccount(userID, req.AccountNumber)
-	if err != nil {
+	if _, err := h.storage.GetAccount(userID, req.AccountNumber); err != nil {
 		return nil, types.NewNotFound(err.Error())
 	}
 
-	// Get all transactions for the account
-	transactions, err := h.storage.GetTransactions(userID, req.AccountNumber, 1, 1000) // Get all transactions
+	// Get balance directly from storage
+	balance, err := h.storage.GetBalance(userID, req.AccountNumber)
 	if err != nil {
 		return nil, types.NewBadRequest(types.BadRequest, err.Error())
 	}
 
-	// Calculate balance
-	var balance int64
-	for _, t := range transactions {
-		balance += int64(t.Amount)
-	}
-
 	return &GetBalanceResponse{
-		Amount:   balance,
-		Currency: "MYR",
+		Amount:   balance.Amount,
+		Currency: balance.Currency,
 	}, nil
 }
