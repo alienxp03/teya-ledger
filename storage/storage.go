@@ -24,6 +24,7 @@ type MemoryStorage struct {
 
 func NewMemoryStorage() *MemoryStorage {
 	return &MemoryStorage{
+		accounts:     []*Account{},
 		transactions: []*Transaction{},
 		balances:     []*Balance{},
 	}

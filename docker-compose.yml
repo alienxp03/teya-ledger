@@ -1,0 +1,14 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    volumes:
+      - .:/app
+  hurl:
+    image: ghcr.io/orange-opensource/hurl:latest
+    volumes:
+      - .:/app
+    entrypoint: hurl

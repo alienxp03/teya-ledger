@@ -23,7 +23,7 @@ func Start() {
 		stop()
 	}()
 
-	addr := flag.String("addr", "localhost:8080", "HTTP network address")
+	addr := flag.String("addr", "0.0.0.0:8080", "HTTP network address")
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
 	lis, err := net.Listen("tcp", *addr)

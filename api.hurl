@@ -1,35 +1,35 @@
-GET http://localhost:8080/api/v1/transactions
+GET http://{{host}}/api/v1/transactions
 Content-Type: application/json
 HTTP/1.1 401
 
 # Get transactions
-GET http://localhost:8080/api/v1/transactions?accountNumber=ACCOUNT_NUMBER_1
+GET http://{{host}}/api/v1/transactions?accountNumber=ACCOUNT_NUMBER_1
 Authorization: USER_TOKEN_1
 HTTP 200
 [Asserts]
 jsonpath "$.transactions" count >= 1
 
 # Get transactions
-GET http://localhost:8080/api/v1/transactions?accountNumber=ACCOUNT_NUMBER_2
+GET http://{{host}}/api/v1/transactions?accountNumber=ACCOUNT_NUMBER_2
 Authorization: USER_TOKEN_1
 HTTP 200
 [Asserts]
 jsonpath "$.transactions" count == 0
 
 # Get transactions with pagination
-GET http://localhost:8080/api/v1/transactions?limit=1&page=1&accountNumber=111222
+GET http://{{host}}/api/v1/transactions?limit=1&page=1&accountNumber=111222
 Authorization: USER_TOKEN_1
 HTTP 200
 [Asserts]
 jsonpath "$.transactions" isCollection
 
 # Deposits unauthorized
-POST http://localhost:8080/api/v1/deposits
+POST http://{{host}}/api/v1/deposits
 Content-Type: application/json
 HTTP/1.1 401
 
 # POST deposits
-POST http://localhost:8080/api/v1/deposits
+POST http://{{host}}/api/v1/deposits
 Authorization: USER_TOKEN_1
 Content-Type: application/json
 {
@@ -52,7 +52,7 @@ jsonpath "$.transaction.updatedAt" exists
 depositTransactionID: jsonpath "$.transaction.transactionID"
 
 # deposits get latest status
-GET http://localhost:8080/api/v1/transactions/{{depositTransactionID}}
+GET http://{{host}}/api/v1/transactions/{{depositTransactionID}}
 Authorization: USER_TOKEN_1
 [Options]
 delay: 200ms
@@ -67,7 +67,7 @@ jsonpath "$.transaction.createdAt" exists
 jsonpath "$.transaction.updatedAt" exists
 
 # deposits wrong user
-GET http://localhost:8080/api/v1/transactions/{{depositTransactionID}}
+GET http://{{host}}/api/v1/transactions/{{depositTransactionID}}
 Authorization: USER_TOKEN_2
 HTTP 404
 [Asserts]
@@ -75,7 +75,7 @@ jsonpath "$.code" == "NOT_FOUND"
 jsonpath "$.message" contains "not found"
 
 # duplicate transactionID
-POST http://localhost:8080/api/v1/deposits
+POST http://{{host}}/api/v1/deposits
 Authorization: USER_TOKEN_1
 Content-Type: application/json
 {
@@ -90,7 +90,7 @@ HTTP 400
 jsonpath "$.message" contains "already exists"
 
 # POST deposits with invalid account number
-POST http://localhost:8080/api/v1/deposits
+POST http://{{host}}/api/v1/deposits
 Authorization: USER_TOKEN_1
 Content-Type: application/json
 {
@@ -106,7 +106,7 @@ jsonpath "$.code" contains "NOT_FOUND"
 jsonpath "$.message" contains "not found"
 
 # POST deposits with invalid amount
-POST http://localhost:8080/api/v1/deposits
+POST http://{{host}}/api/v1/deposits
 Authorization: USER_TOKEN_1
 Content-Type: application/json
 {
@@ -121,7 +121,7 @@ HTTP 400
 jsonpath "$.message" contains "Invalid"
 
 # POST deposits with invalid currency
-POST http://localhost:8080/api/v1/deposits
+POST http://{{host}}/api/v1/deposits
 Authorization: USER_TOKEN_1
 Content-Type: application/json
 {
@@ -136,13 +136,13 @@ HTTP 400
 jsonpath "$.message" contains "Invalid"
 
 # Withdrawals unauthorized
-POST http://localhost:8080/api/v1/deposits
+POST http://{{host}}/api/v1/deposits
 Content-Type: application/json
 HTTP/1.1 401
 
 
 # POST withdrawals
-POST http://localhost:8080/api/v1/withdrawals
+POST http://{{host}}/api/v1/withdrawals
 Authorization: USER_TOKEN_1
 Content-Type: application/json
 {
@@ -165,7 +165,7 @@ jsonpath "$.transaction.updatedAt" exists
 withdrawalTransactionID: jsonpath "$.transaction.transactionID"
 
 # withdrawals get latest status
-GET http://localhost:8080/api/v1/transactions/{{withdrawalTransactionID}}
+GET http://{{host}}/api/v1/transactions/{{withdrawalTransactionID}}
 Authorization: USER_TOKEN_1
 [Options]
 delay: 200ms
@@ -180,7 +180,7 @@ jsonpath "$.transaction.createdAt" exists
 jsonpath "$.transaction.updatedAt" exists
 
 # withdrawals wrong user
-GET http://localhost:8080/api/v1/transactions/{{withdrawalTransactionID}}
+GET http://{{host}}/api/v1/transactions/{{withdrawalTransactionID}}
 Authorization: USER_TOKEN_2
 HTTP 404
 [Asserts]
@@ -188,7 +188,7 @@ jsonpath "$.code" == "NOT_FOUND"
 jsonpath "$.message" contains "not found"
 
 # duplicate withdrawal transactionID
-POST http://localhost:8080/api/v1/withdrawals
+POST http://{{host}}/api/v1/withdrawals
 Authorization: USER_TOKEN_1
 Content-Type: application/json
 {
@@ -203,7 +203,7 @@ HTTP 400
 jsonpath "$.message" contains "already exists"
 
 # POST withdrawals with invalid account number
-POST http://localhost:8080/api/v1/withdrawals
+POST http://{{host}}/api/v1/withdrawals
 Authorization: USER_TOKEN_1
 Content-Type: application/json
 {
@@ -219,7 +219,7 @@ jsonpath "$.code" contains "NOT_FOUND"
 jsonpath "$.message" contains "not found"
 
 # POST withdrawals with invalid amount
-POST http://localhost:8080/api/v1/withdrawals
+POST http://{{host}}/api/v1/withdrawals
 Authorization: USER_TOKEN_1
 Content-Type: application/json
 {
@@ -234,7 +234,7 @@ HTTP 400
 jsonpath "$.message" contains "Invalid"
 
 # POST withdrawals with invalid currency
-POST http://localhost:8080/api/v1/withdrawals
+POST http://{{host}}/api/v1/withdrawals
 Authorization: USER_TOKEN_1
 Content-Type: application/json
 {
@@ -249,7 +249,7 @@ HTTP 400
 jsonpath "$.message" contains "Invalid"
 
 # Get balance
-GET http://localhost:8080/api/v1/balances?accountNumber=ACCOUNT_NUMBER_1
+GET http://{{host}}/api/v1/balances?accountNumber=ACCOUNT_NUMBER_1
 Authorization: USER_TOKEN_1
 Content-Type: application/json
 HTTP/1.1 200
@@ -258,7 +258,7 @@ jsonpath "$.balance.amount" > 0
 jsonpath "$.balance.currency" == "MYR"
 
 # Get balance - invalid account
-GET http://localhost:8080/api/v1/balances?accountNumber=INVALID_ACCOUNT
+GET http://{{host}}/api/v1/balances?accountNumber=INVALID_ACCOUNT
 Authorization: USER_TOKEN_1
 Content-Type: application/json
 HTTP/1.1 404
@@ -267,7 +267,7 @@ jsonpath "$.code" == "NOT_FOUND"
 jsonpath "$.message" == "not found"
 
 # Get balance - unauthorized
-GET http://localhost:8080/api/v1/balances
+GET http://{{host}}/api/v1/balances
 Content-Type: application/json
 HTTP/1.1 401
 

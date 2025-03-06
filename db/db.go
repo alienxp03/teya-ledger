@@ -31,25 +31,6 @@ func (m *MemoryDB) GetStorage() storage.Storage {
 }
 
 func (m *MemoryDB) SeedData() error {
-	users := []User{
-		{
-			UserID:      "USER_ID_1",
-			Email:       "user1@example.com",
-			AccessToken: "USER_TOKEN_1",
-			Name:        "User 1",
-		},
-		{
-			UserID:      "USER_ID_2",
-			Email:       "user2@example.com",
-			AccessToken: "USER_TOKEN_2",
-			Name:        "User 2",
-		},
-	}
-
-	for _, _ = range users {
-		// m.storage.CreateUser(user)
-	}
-
 	accounts := []storage.Account{
 		{
 			ID:        1,
