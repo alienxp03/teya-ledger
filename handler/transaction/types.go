@@ -12,12 +12,24 @@ type GetTransactionsResponse struct {
 	Transactions []Transaction
 }
 
+type CreateDepositRequest struct {
+	TransactionID string
+	AccountNumber string
+	Amount        int
+	Currency      string
+	Description   string
+}
+
+type CreateDepositResponse struct {
+	Transaction Transaction
+}
+
 type Transaction struct {
-	IdempotencyKey string
-	Status         string
-	Amount         int
-	Currency       string
-	Description    string
-	CreatedAt      time.Time
-	UpdatedAt      time.Time
+	TransactionID string
+	Status        string
+	Amount        int
+	Currency      string
+	Description   string
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
 }

@@ -7,3 +7,6 @@ test:
 coverage:
 	go test -count=1 -coverprofile=tmp/coverage.out ./...
 	go tool cover -func=tmp/coverage.out
+
+api_test:
+	hurl --error-format=long --verbose --test api.hurl

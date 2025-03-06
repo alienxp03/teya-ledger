@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+
+	"github.com/alienxp03/teya-ledger/types"
 )
 
 func (a *APIImpl) respond(w http.ResponseWriter, status int, body any) {
@@ -16,21 +18,23 @@ func (a *APIImpl) respond(w http.ResponseWriter, status int, body any) {
 
 func (a *APIImpl) respondError(w http.ResponseWriter, status int, err error, msg string) {
 	type response struct {
-		Error string `json:"error"`
+		Message string `json:"message"`
 	}
-	a.respond(w, status, response{Error: msg})
+
+	if serviceError, ok := err.(*types.ServiceError); ok {
+		a.respond(w, serviceError.Status, serviceError)
+		return
+	}
+	a.respond(w, status, response{Message: msg})
 }
 
-func parseRequest(r *http.Request, dst interface{}) error {
-	if err := decoder.Decode(dst, r.URL.Query()); err != nil {
-		return fmt.Errorf("failed to decode query parameters: %w", err)
+func parseBody(r *http.Request, dst interface{}) error {
+	if err := json.NewDecoder(r.Body).Decode(dst); err != nil {
+		return fmt.Errorf("invalid body: %w", err)
 	}
 
-	if err := r.ParseForm(); err != nil {
-		return fmt.Errorf("failed to parse form body: %w", err)
-	}
-	if err := decoder.Decode(dst, r.Form); err != nil {
-		return fmt.Errorf("failed to decode form body: %w", err)
+	if err := validate.Struct(dst); err != nil {
+		return fmt.Errorf("invalid body: %w", err)
 	}
 
 	return nil

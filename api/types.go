@@ -1,21 +1,33 @@
 package api
 
 type GetTransactionsRequest struct {
-	AccountNumber string `schema:"accountNumber,required"`
-	Limit         int    `schema:"limit"`
-	Page          int    `schema:"page"`
+	AccountNumber string `json:"accountNumber"`
+	Limit         string `json:"limit"`
+	Page          string `json:"page"`
 }
 
 type GetTransactionsResponse struct {
 	Transactions []Transaction `json:"transactions"`
 }
 
+type CreateDepositRequest struct {
+	TransactionID string `validate:"required"`
+	AccountNumber string `validate:"required"`
+	Amount        int    `validate:"required,gte=0"`
+	Currency      string `validate:"required,oneof=MYR"`
+	Description   string `validate:"required"`
+}
+
+type CreateDepositResponse struct {
+	Transaction Transaction `json:"transaction"`
+}
+
 type Transaction struct {
-	IdempotencyKey string `json:"idempotency_key"`
-	Status         string `json:"status"`
-	Amount         int    `json:"amount"`
-	Currency       string `json:"currency"`
-	Description    string `json:"description"`
-	CreatedAt      string `json:"created_at"`
-	UpdatedAt      string `json:"updated_at"`
+	TransactionID string `json:"transactionID"`
+	Status        string `json:"status"`
+	Amount        int    `json:"amount"`
+	Currency      string `json:"currency"`
+	Description   string `json:"description"`
+	CreatedAt     string `json:"createdAt"`
+	UpdatedAt     string `json:"updatedAt"`
 }

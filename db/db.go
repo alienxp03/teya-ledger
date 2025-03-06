@@ -33,10 +33,16 @@ func (m *MemoryDB) GetStorage() storage.Storage {
 func (m *MemoryDB) SeedData() error {
 	users := []User{
 		{
-			ID:          "USER_ID_1",
+			UserID:      "USER_ID_1",
 			Email:       "user1@example.com",
 			AccessToken: "USER_TOKEN_1",
 			Name:        "User 1",
+		},
+		{
+			UserID:      "USER_ID_2",
+			Email:       "user2@example.com",
+			AccessToken: "USER_TOKEN_2",
+			Name:        "User 2",
 		},
 	}
 
@@ -44,37 +50,45 @@ func (m *MemoryDB) SeedData() error {
 		// m.storage.CreateUser(user)
 	}
 
-	accounts := []Account{
+	accounts := []storage.Account{
 		{
-			ID:        "ACCOUNT_ID_1",
+			ID:        1,
 			Number:    "ACCOUNT_NUMBER_1",
 			UserID:    "USER_ID_1",
-			Currency:  "USD",
 			Balance:   1000,
-			CreatedAt: time.Date(2022, 2, 1, 0, 0, 0, 0, time.UTC),
-			UpdatedAt: time.Date(2025, 2, 1, 0, 0, 2, 0, time.UTC),
+			CreatedAt: time.Date(2022, 2, 1, 0, 0, 0, 0, time.UTC).UTC(),
+			UpdatedAt: time.Date(2025, 2, 1, 0, 0, 2, 0, time.UTC).UTC(),
+		},
+		{
+			ID:        2,
+			Number:    "ACCOUNT_NUMBER_1",
+			UserID:    "USER_ID_2",
+			Balance:   1000,
+			CreatedAt: time.Date(2022, 2, 1, 0, 0, 0, 0, time.UTC).UTC(),
+			UpdatedAt: time.Date(2025, 2, 1, 0, 0, 2, 0, time.UTC).UTC(),
 		},
 	}
 
-	for _, _ = range accounts {
+	for _, account := range accounts {
+		m.storage.CreateAccount(account)
 	}
 
 	transactions := []storage.Transaction{
 		{
-			ID:             1,
-			IdempotencyKey: "123456",
-			Status:         "success",
-			Amount:         100,
-			Currency:       "USD",
-			Description:    "Payment for order 123456",
-			AccountNumber:  "ACCOUNT_NUMBER_1",
-			CreatedAt:      time.Date(2022, 2, 1, 0, 0, 0, 0, time.UTC),
-			UpdatedAt:      time.Date(2025, 2, 1, 0, 0, 2, 0, time.UTC),
+			ID:            1,
+			TransactionID: "123456",
+			Status:        "success",
+			Amount:        100,
+			Currency:      "USD",
+			Description:   "Payment for order 123456",
+			UserID:        "USER_ID_1",
+			AccountNumber: "ACCOUNT_NUMBER_1",
+			CreatedAt:     time.Date(2022, 2, 1, 0, 0, 0, 0, time.UTC),
+			UpdatedAt:     time.Date(2025, 2, 1, 0, 0, 2, 0, time.UTC),
 		},
 	}
 
 	for _, transaction := range transactions {
-		// m.storage.CreateTransaction(transaction)
 		m.storage.CreateTransaction(&transaction)
 	}
 

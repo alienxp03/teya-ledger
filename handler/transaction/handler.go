@@ -1,13 +1,13 @@
 package transaction
 
 import (
-	"net/http"
-
 	"github.com/alienxp03/teya-ledger/storage"
+	"github.com/alienxp03/teya-ledger/types"
 )
 
 type Transactioner interface {
-	GetTransactions(w http.ResponseWriter, req GetTransactionsRequest) (GetTransactionsResponse, error)
+	GetTransactions(userID string, req GetTransactionsRequest) (*GetTransactionsResponse, error)
+	CreateDeposit(userID string, req CreateDepositRequest) (*CreateDepositResponse, error)
 }
 
 type TransactionHandler struct {
@@ -20,24 +20,51 @@ func New(storage storage.Storage) *TransactionHandler {
 	}
 }
 
-func (t TransactionHandler) GetTransactions(w http.ResponseWriter, req GetTransactionsRequest) (GetTransactionsResponse, error) {
-	transactionsData, err := t.storage.GetTransactions(req.AccountNumber, req.Limit, req.Page)
+func (t TransactionHandler) CreateDeposit(userID string, req CreateDepositRequest) (*CreateDepositResponse, error) {
+	if _, err := t.storage.GetAccount(userID, req.AccountNumber); err != nil {
+		return nil, types.NewNotFound(err.Error())
+	}
+
+	transaction, err := t.storage.CreateDeposit(&storage.Transaction{
+		TransactionID: req.TransactionID,
+		Status:        "pending",
+		Amount:        req.Amount,
+		Currency:      req.Currency,
+		Description:   req.Description,
+	})
 	if err != nil {
-		return GetTransactionsResponse{Transactions: []Transaction{}}, err
+		return nil, err
+	}
+
+	return &CreateDepositResponse{Transaction: Transaction{
+		TransactionID: transaction.TransactionID,
+		Status:        transaction.Status,
+		Amount:        transaction.Amount,
+		Currency:      transaction.Currency,
+		Description:   transaction.Description,
+		CreatedAt:     transaction.CreatedAt,
+		UpdatedAt:     transaction.UpdatedAt,
+	}}, nil
+}
+
+func (t TransactionHandler) GetTransactions(userID string, req GetTransactionsRequest) (*GetTransactionsResponse, error) {
+	transactionsData, err := t.storage.GetTransactions(userID, req.AccountNumber, req.Limit, req.Page)
+	if err != nil {
+		return nil, err
 	}
 
 	transactions := []Transaction{}
 	for _, transaction := range transactionsData {
 		transactions = append(transactions, Transaction{
-			IdempotencyKey: transaction.IdempotencyKey,
-			Status:         transaction.Status,
-			Amount:         transaction.Amount,
-			Currency:       transaction.Currency,
-			Description:    transaction.Description,
-			CreatedAt:      transaction.CreatedAt,
-			UpdatedAt:      transaction.UpdatedAt,
+			TransactionID: transaction.TransactionID,
+			Status:        transaction.Status,
+			Amount:        transaction.Amount,
+			Currency:      transaction.Currency,
+			Description:   transaction.Description,
+			CreatedAt:     transaction.CreatedAt,
+			UpdatedAt:     transaction.UpdatedAt,
 		})
 	}
 
-	return GetTransactionsResponse{Transactions: transactions}, nil
+	return &GetTransactionsResponse{Transactions: transactions}, nil
 }

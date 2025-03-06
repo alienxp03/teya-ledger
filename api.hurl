@@ -1,27 +1,105 @@
 # Get transactions
 GET http://localhost:8080/api/v1/transactions?accountNumber=ACCOUNT_NUMBER_1
-Authorization: Bearer USER_TOKEN_1
+Authorization: USER_TOKEN_1
 HTTP 200
 [Asserts]
 jsonpath "$.transactions" count == 1
 
 # Get transactions
 GET http://localhost:8080/api/v1/transactions?accountNumber=ACCOUNT_NUMBER_2
-Authorization: Bearer USER_TOKEN_1
+Authorization: USER_TOKEN_1
 HTTP 200
 [Asserts]
 jsonpath "$.transactions" count == 0
 
 # Get transactions with pagination
 GET http://localhost:8080/api/v1/transactions?limit=1&page=1&accountNumber=111222
-Authorization: Bearer USER_TOKEN_1
+Authorization: USER_TOKEN_1
 HTTP 200
 [Asserts]
 jsonpath "$.transactions" isCollection
 
-# Get transactions with invalid query parameter
-GET http://localhost:8080/api/v1/transactions?limit=1&page=1&invalidParam=1&accountNumber=111222
-Authorization: Bearer USER_TOKEN_1
+# POST deposits
+POST http://localhost:8080/api/v1/deposits
+Authorization: USER_TOKEN_1
+Content-Type: application/json
+{
+    "transactionID": "{{newUuid}}",
+    "accountNumber": "ACCOUNT_NUMBER_1",
+    "amount": 100,
+    "currency": "MYR",
+    "description": "description"
+}
+HTTP 200
+[Asserts]
+jsonpath "$.transaction.transactionID" exists
+jsonpath "$.transaction.status" == "pending"
+jsonpath "$.transaction.amount" == 100
+jsonpath "$.transaction.currency" == "MYR"
+jsonpath "$.transaction.description" == "description"
+jsonpath "$.transaction.createdAt" exists
+jsonpath "$.transaction.updatedAt" exists
+[Captures]
+transactionID: jsonpath "$.transaction.transactionID"
+
+# duplicate transactionID
+POST http://localhost:8080/api/v1/deposits
+Authorization: USER_TOKEN_1
+Content-Type: application/json
+{
+    "transactionID": "{{transactionID}}",
+    "accountNumber": "ACCOUNT_NUMBER_1",
+    "amount": 100,
+    "currency": "MYR",
+    "description": "description"
+}
 HTTP 400
 [Asserts]
-jsonpath "$.error" contains "invalid path"
+jsonpath "$.message" contains "already exists"
+
+# POST deposits with invalid account number
+POST http://localhost:8080/api/v1/deposits
+Authorization: USER_TOKEN_1
+Content-Type: application/json
+{
+    "transactionID": "{{newUuid}}",
+    "accountNumber": "ACCOUNT_NUMBER_2",
+    "amount": 100,
+    "currency": "MYR",
+    "description": "description"
+}
+HTTP 404
+[Asserts]
+jsonpath "$.code" contains "NOT_FOUND"
+jsonpath "$.message" contains "not found"
+
+# POST deposits with invalid amount
+POST http://localhost:8080/api/v1/deposits
+Authorization: USER_TOKEN_1
+Content-Type: application/json
+{
+    "transactionID": "{{newUuid}}",
+    "accountNumber": "ACCOUNT_NUMBER_1",
+    "amount": -100,
+    "currency": "MYR",
+    "description": "description"
+}
+HTTP 400
+[Asserts]
+jsonpath "$.message" contains "Invalid"
+
+# POST deposits with invalid currency
+POST http://localhost:8080/api/v1/deposits
+Authorization: USER_TOKEN_1
+Content-Type: application/json
+{
+    "transactionID": "{{newUuid}}",
+    "accountNumber": "ACCOUNT_NUMBER_1",
+    "amount": 100,
+    "currency": "USD",
+    "description": "description"
+}
+HTTP 400
+[Asserts]
+jsonpath "$.message" contains "Invalid"
+
