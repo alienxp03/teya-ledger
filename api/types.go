@@ -34,6 +34,19 @@ type CreateWithdrawalResponse struct {
 	Transaction Transaction `json:"transaction"`
 }
 
+type GetBalanceRequest struct {
+	AccountNumber string `json:"accountNumber" validate:"required"`
+}
+
+type GetBalanceResponse struct {
+	Balance Balance `json:"balance"`
+}
+
+type Balance struct {
+	Amount   int64  `json:"amount"`
+	Currency string `json:"currency"`
+}
+
 type Transaction struct {
 	TransactionID string `json:"transactionID"`
 	Status        string `json:"status"`

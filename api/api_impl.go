@@ -25,6 +25,7 @@ func (a *APIImpl) setupRoutes() {
 	mux.Handle("POST /api/v1/withdrawals", AuthMiddleware(http.HandlerFunc(a.createWithdrawal)))
 
 	// Current balance
+	mux.Handle("GET /api/v1/balances", AuthMiddleware(http.HandlerFunc(a.getBalance)))
 
 	// Transaction history
 	mux.Handle("GET /api/v1/transactions", AuthMiddleware(http.HandlerFunc(a.getTransactions)))
@@ -127,6 +128,24 @@ func (a *APIImpl) getTransactions(w http.ResponseWriter, r *http.Request) {
 	a.respond(w, http.StatusOK, resp)
 }
 
+func (a *APIImpl) getBalance(w http.ResponseWriter, r *http.Request) {
+	userID, _ := r.Context().Value(HeaderUserID).(string)
+
+	req := getBalancesParams(r)
+
+	resp, err := a.transactioner.GetBalance(userID, *req)
+	if err != nil {
+		a.respondError(w, http.StatusBadRequest, err, fmt.Sprintf("Failed to get balance: %+v", err))
+		return
+	}
+
+	result := GetBalanceResponse{
+		Balance: Balance{Amount: resp.Amount, Currency: resp.Currency},
+	}
+
+	a.respond(w, http.StatusOK, result)
+}
+
 func getTransactionsParams(r *http.Request) *transaction.GetTransactionsRequest {
 	limit, err := strconv.Atoi(r.URL.Query().Get("limit"))
 	if err != nil {
@@ -177,4 +196,12 @@ func createWithdrawalParams(r *http.Request) (*transaction.CreateWithdrawalReque
 		Description:   req.Description,
 	}
 	return result, nil
+}
+
+func getBalancesParams(r *http.Request) *transaction.GetBalanceRequest {
+	req := &transaction.GetBalanceRequest{
+		AccountNumber: r.URL.Query().Get("accountNumber"),
+	}
+
+	return req
 }

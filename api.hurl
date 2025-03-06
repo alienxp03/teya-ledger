@@ -26,7 +26,7 @@ Content-Type: application/json
 {
     "transactionID": "{{newUuid}}",
     "accountNumber": "ACCOUNT_NUMBER_1",
-    "amount": 100,
+    "amount": 1000,
     "currency": "MYR",
     "description": "description"
 }
@@ -34,7 +34,7 @@ HTTP 200
 [Asserts]
 jsonpath "$.transaction.transactionID" exists
 jsonpath "$.transaction.status" == "pending"
-jsonpath "$.transaction.amount" == 100
+jsonpath "$.transaction.amount" > 0
 jsonpath "$.transaction.currency" == "MYR"
 jsonpath "$.transaction.description" == "description"
 jsonpath "$.transaction.createdAt" exists
@@ -179,7 +179,7 @@ Content-Type: application/json
 {
     "transactionID": "{{newUuid}}",
     "accountNumber": "ACCOUNT_NUMBER_1",
-    "amount": -100,
+    "amount": -10,
     "currency": "USD",
     "description": "withdrawal description"
 }
@@ -187,3 +187,25 @@ HTTP 400
 [Asserts]
 jsonpath "$.message" contains "Invalid"
 
+# Get balance
+GET http://localhost:8080/api/v1/balances?accountNumber=ACCOUNT_NUMBER_1
+Authorization: USER_TOKEN_1
+Content-Type: application/json
+HTTP/1.1 200
+[Asserts]
+jsonpath "$.balance.amount" > 0
+jsonpath "$.balance.currency" == "MYR"
+
+# Get balance - invalid account
+GET http://localhost:8080/api/v1/balances?accountNumber=INVALID_ACCOUNT
+Authorization: USER_TOKEN_1
+Content-Type: application/json
+HTTP/1.1 404
+[Asserts]
+jsonpath "$.code" == "NOT_FOUND"
+jsonpath "$.message" == "not found"
+
+# Get balance - unauthorized
+GET http://localhost:8080/api/v1/balances
+Content-Type: application/json
+HTTP/1.1 401

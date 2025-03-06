@@ -61,9 +61,9 @@ func (m *MemoryDB) SeedData() error {
 		},
 		{
 			ID:        2,
-			Number:    "ACCOUNT_NUMBER_1",
+			Number:    "ACCOUNT_NUMBER_2",
 			UserID:    "USER_ID_2",
-			Balance:   1000,
+			Balance:   2000,
 			CreatedAt: time.Date(2022, 2, 1, 0, 0, 0, 0, time.UTC).UTC(),
 			UpdatedAt: time.Date(2025, 2, 1, 0, 0, 2, 0, time.UTC).UTC(),
 		},

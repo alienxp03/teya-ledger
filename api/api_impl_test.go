@@ -268,11 +268,99 @@ func TestCreateWithdrawal(t *testing.T) {
 	}
 }
 
+func TestGetBalance(t *testing.T) {
+	type args struct {
+		userToken string
+	}
+	type setup struct {
+		mockTransactioner *MockTransactioner
+	}
+
+	tests := []struct {
+		name    string
+		args    args
+		reqBody map[string]interface{}
+		setup   setup
+		want    GetBalanceResponse
+		wantErr bool
+	}{
+		{
+			name:    "success",
+			args:    args{userToken: "USER_TOKEN_1"},
+			reqBody: map[string]interface{}{"accountNumber": "ACCOUNT_NUMBER_1"},
+			setup: func() setup {
+				mockTransactioner := &MockTransactioner{
+					GetBalanceFunc: func(userID string, req transaction.GetBalanceRequest) (*transaction.GetBalanceResponse, error) {
+						return &transaction.GetBalanceResponse{
+							Amount:   1000,
+							Currency: "MYR",
+						}, nil
+					},
+				}
+				return setup{mockTransactioner}
+			}(),
+			want: GetBalanceResponse{
+				Balance: Balance{Amount: 1000, Currency: "MYR"},
+			},
+		},
+		{
+			name:    "invalid account",
+			args:    args{userToken: "USER_TOKEN_1"},
+			reqBody: map[string]interface{}{"accountNumber": "INVALID_ACCOUNT"},
+			setup: func() setup {
+				mockTransactioner := &MockTransactioner{
+					GetBalanceFunc: func(userID string, req transaction.GetBalanceRequest) (*transaction.GetBalanceResponse, error) {
+						return nil, errors.New("account not found")
+					},
+				}
+				return setup{mockTransactioner}
+			}(),
+			wantErr: true,
+		},
+		{
+			name:    "logic error",
+			args:    args{userToken: "USER_TOKEN_1"},
+			reqBody: map[string]interface{}{"accountNumber": "ACCOUNT_NUMBER_1"},
+			setup: func() setup {
+				mockTransactioner := &MockTransactioner{
+					GetBalanceFunc: func(userID string, req transaction.GetBalanceRequest) (*transaction.GetBalanceResponse, error) {
+						return nil, errors.New("logic error")
+					},
+				}
+				return setup{mockTransactioner}
+			}(),
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			api := New(tt.setup.mockTransactioner)
+
+			reqBodyBytes, _ := json.Marshal(tt.reqBody)
+			req, _ := http.NewRequest("GET", "/api/v1/balances", bytes.NewBuffer(reqBodyBytes))
+			req.Header.Set("Content-Type", "application/json")
+			req.Header.Set("Authorization", tt.args.userToken)
+			w := httptest.NewRecorder()
+			api.ServeHTTP(w, req)
+
+			if tt.wantErr {
+				assert.Equal(t, http.StatusBadRequest, w.Code)
+				return
+			}
+			assert.Equal(t, http.StatusOK, w.Code)
+			var resp GetBalanceResponse
+			json.Unmarshal(w.Body.Bytes(), &resp)
+			assert.Equal(t, tt.want, resp)
+		})
+	}
+}
+
 // MockTransactioner is a mock implementation of the Transactioner interface
 type MockTransactioner struct {
 	GetTransactionsFunc  func(userID string, req transaction.GetTransactionsRequest) (*transaction.GetTransactionsResponse, error)
 	CreateDepositFunc    func(userID string, req transaction.CreateDepositRequest) (*transaction.CreateDepositResponse, error)
 	CreateWithdrawalFunc func(userID string, req transaction.CreateWithdrawalRequest) (*transaction.CreateWithdrawalResponse, error)
+	GetBalanceFunc       func(userID string, req transaction.GetBalanceRequest) (*transaction.GetBalanceResponse, error)
 }
 
 func (m *MockTransactioner) GetTransactions(userID string, req transaction.GetTransactionsRequest) (*transaction.GetTransactionsResponse, error) {
@@ -285,4 +373,8 @@ func (m *MockTransactioner) CreateDeposit(userID string, req transaction.CreateD
 
 func (m *MockTransactioner) CreateWithdrawal(userID string, req transaction.CreateWithdrawalRequest) (*transaction.CreateWithdrawalResponse, error) {
 	return m.CreateWithdrawalFunc(userID, req)
+}
+
+func (m *MockTransactioner) GetBalance(userID string, req transaction.GetBalanceRequest) (*transaction.GetBalanceResponse, error) {
+	return m.GetBalanceFunc(userID, req)
 }

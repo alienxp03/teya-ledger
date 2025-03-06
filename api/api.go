@@ -14,10 +14,12 @@ const (
 	HeaderUserID = "userID"
 )
 
+// Transactioner defines the interface for transaction-related operations
 type Transactioner interface {
-	GetTransactions(w http.ResponseWriter, req GetTransactionsRequest) (GetTransactionsResponse, error)
-	CreateDeposit(w http.ResponseWriter, req CreateDepositRequest) (CreateDepositResponse, error)
-	CreateWithdrawal(w http.ResponseWriter, req CreateWithdrawalRequest) (CreateWithdrawalResponse, error)
+	GetTransactions(userID string, req transaction.GetTransactionsRequest) (*transaction.GetTransactionsResponse, error)
+	CreateDeposit(userID string, req transaction.CreateDepositRequest) (*transaction.CreateDepositResponse, error)
+	CreateWithdrawal(userID string, req transaction.CreateWithdrawalRequest) (*transaction.CreateWithdrawalResponse, error)
+	GetBalance(userID string, req transaction.GetBalanceRequest) (*transaction.GetBalanceResponse, error)
 }
 
 type APIImpl struct {

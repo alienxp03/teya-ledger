@@ -45,3 +45,12 @@ type Transaction struct {
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
 }
+
+type GetBalanceRequest struct {
+	AccountNumber string `json:"accountNumber" validate:"required"`
+}
+
+type GetBalanceResponse struct {
+	Amount   int64  `json:"amount"`
+	Currency string `json:"currency"`
+}
