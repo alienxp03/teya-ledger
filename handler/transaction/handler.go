@@ -8,6 +8,7 @@ import (
 type Transactioner interface {
 	GetTransactions(userID string, req GetTransactionsRequest) (*GetTransactionsResponse, error)
 	CreateDeposit(userID string, req CreateDepositRequest) (*CreateDepositResponse, error)
+	CreateWithdrawal(userID string, req CreateWithdrawalRequest) (*CreateWithdrawalResponse, error)
 }
 
 type TransactionHandler struct {
@@ -67,4 +68,35 @@ func (t TransactionHandler) GetTransactions(userID string, req GetTransactionsRe
 	}
 
 	return &GetTransactionsResponse{Transactions: transactions}, nil
+}
+
+func (t TransactionHandler) CreateWithdrawal(userID string, req CreateWithdrawalRequest) (*CreateWithdrawalResponse, error) {
+	if _, err := t.storage.GetAccount(userID, req.AccountNumber); err != nil {
+		return nil, types.NewNotFound(err.Error())
+	}
+
+	// TODO: Add check balance
+
+	transaction, err := t.storage.CreateWithdrawal(&storage.Transaction{
+		TransactionID: req.TransactionID,
+		Status:        "pending",
+		Amount:        req.Amount,
+		Currency:      req.Currency,
+		Description:   req.Description,
+		UserID:        userID,
+		AccountNumber: req.AccountNumber,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &CreateWithdrawalResponse{Transaction: Transaction{
+		TransactionID: transaction.TransactionID,
+		Status:        transaction.Status,
+		Amount:        transaction.Amount,
+		Currency:      transaction.Currency,
+		Description:   transaction.Description,
+		CreatedAt:     transaction.CreatedAt,
+		UpdatedAt:     transaction.UpdatedAt,
+	}}, nil
 }

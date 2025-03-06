@@ -219,12 +219,128 @@ func TestGetTransactions(t *testing.T) {
 	}
 }
 
+func TestCreateWithdrawal(t *testing.T) {
+	type args struct {
+		userID string
+	}
+	type setup struct {
+		mockStorage *MockStorage
+	}
+
+	tests := []struct {
+		name    string
+		args    args
+		setup   setup
+		req     CreateWithdrawalRequest
+		want    *CreateWithdrawalResponse
+		wantErr bool
+	}{
+		{
+			name: "success",
+			args: args{userID: "USER_ID_1"},
+			req: CreateWithdrawalRequest{
+				TransactionID: "idempotency-key",
+				AccountNumber: "ACCOUNT_NUMBER_1",
+				Amount:        100,
+				Currency:      "MYR",
+				Description:   "withdrawal description",
+			},
+			setup: func() setup {
+				mockStorage := &MockStorage{
+					GetAccountFunc: func(userID, accountNumber string) (*storage.Account, error) {
+						return &storage.Account{Number: "account-number"}, nil
+					},
+					CreateWithdrawalFunc: func(transaction *storage.Transaction) (*storage.Transaction, error) {
+						return &storage.Transaction{
+							TransactionID: "idempotency-key",
+							Status:        "pending",
+							Amount:        -100,
+							Currency:      "MYR",
+							Description:   "withdrawal description",
+							CreatedAt:     time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC),
+							UpdatedAt:     time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC),
+						}, nil
+					},
+				}
+				return setup{mockStorage}
+			}(),
+			want: &CreateWithdrawalResponse{
+				Transaction: Transaction{
+					TransactionID: "idempotency-key",
+					Status:        "pending",
+					Amount:        -100,
+					Currency:      "MYR",
+					Description:   "withdrawal description",
+					CreatedAt:     time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC),
+					UpdatedAt:     time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC),
+				},
+			},
+		},
+		{
+			name: "invalid user account",
+			req: CreateWithdrawalRequest{
+				TransactionID: "idempotency-key",
+				Amount:        100,
+				Currency:      "MYR",
+				Description:   "withdrawal description",
+			},
+			setup: func() setup {
+				mockStorage := &MockStorage{
+					GetAccountFunc: func(userID string, accountNumber string) (*storage.Account, error) {
+						return nil, storage.ErrNotFound
+					},
+				}
+				return setup{mockStorage}
+			}(),
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "error saving data",
+			req: CreateWithdrawalRequest{
+				TransactionID: "idempotency-key",
+				Amount:        100,
+				Currency:      "MYR",
+				Description:   "withdrawal description",
+			},
+			setup: func() setup {
+				mockStorage := &MockStorage{
+					GetAccountFunc: func(userID string, accountNumber string) (*storage.Account, error) {
+						return &storage.Account{Number: "account-number"}, nil
+					},
+					CreateWithdrawalFunc: func(transaction *storage.Transaction) (*storage.Transaction, error) {
+						return nil, errors.New("saving error")
+					},
+				}
+				return setup{mockStorage}
+			}(),
+			want:    nil,
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			handler := New(tt.setup.mockStorage)
+			got, err := handler.CreateWithdrawal(tt.args.userID, tt.req)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("CreateWithdrawal() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("CreateWithdrawal() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 type MockStorage struct {
 	CreateAccountFunc     func(accountNumber storage.Account) (*storage.Account, error)
 	GetAccountFunc        func(userID string, accountNumber string) (*storage.Account, error)
 	CreateTransactionFunc func(transaction *storage.Transaction) error
 	GetTransactionsFunc   func(userID, accountNumber string, limit, page int) ([]*storage.Transaction, error)
 	CreateDepositFunc     func(transaction *storage.Transaction) (*storage.Transaction, error)
+	CreateWithdrawalFunc  func(transaction *storage.Transaction) (*storage.Transaction, error)
 }
 
 func (m *MockStorage) CreateAccount(account storage.Account) (*storage.Account, error) {
@@ -245,4 +361,8 @@ func (m *MockStorage) GetTransactions(userID, accountNumber string, limit, page 
 
 func (m *MockStorage) GetAccount(userID string, accountNumber string) (*storage.Account, error) {
 	return m.GetAccountFunc(userID, accountNumber)
+}
+
+func (m *MockStorage) CreateWithdrawal(transaction *storage.Transaction) (*storage.Transaction, error) {
+	return m.CreateWithdrawalFunc(transaction)
 }

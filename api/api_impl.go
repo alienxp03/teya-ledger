@@ -1,40 +1,13 @@
 package api
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"strconv"
-	"strings"
-	"sync"
 	"time"
 
 	"github.com/alienxp03/teya-ledger/handler/transaction"
 )
-
-func AuthMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		authHeader := r.Header.Get("Authorization")
-		if authHeader == "" {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
-			return
-		}
-
-		// resolve userID
-		userID := strings.ReplaceAll(authHeader, "USER_TOKEN", "USER_ID")
-
-		ctx := context.WithValue(r.Context(), HeaderUserID, userID)
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
-}
-
-// APIImpl provides the REST endpoints for the application.
-type APIImpl struct {
-	transactioner transaction.Transactioner
-
-	once sync.Once
-	mux  *http.ServeMux
-}
 
 func New(transactioner transaction.Transactioner) *APIImpl {
 	return &APIImpl{
@@ -46,14 +19,14 @@ func (a *APIImpl) setupRoutes() {
 	mux := http.NewServeMux()
 
 	// Deposits
-	// mux.HandleFunc("POST /api/v1/deposits", a.createDeposit)
 	mux.Handle("POST /api/v1/deposits", AuthMiddleware(http.HandlerFunc(a.createDeposit)))
 
 	// Withdrawals
+	mux.Handle("POST /api/v1/withdrawals", AuthMiddleware(http.HandlerFunc(a.createWithdrawal)))
+
 	// Current balance
 
 	// Transaction history
-	// mux.HandleFunc("GET /api/v1/transactions", a.getTransactions)
 	mux.Handle("GET /api/v1/transactions", AuthMiddleware(http.HandlerFunc(a.getTransactions)))
 
 	a.mux = mux
@@ -81,6 +54,36 @@ func (a *APIImpl) createDeposit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := CreateDepositResponse{
+		Transaction: Transaction{
+			TransactionID: result.Transaction.TransactionID,
+			Status:        result.Transaction.Status,
+			Amount:        result.Transaction.Amount,
+			Currency:      result.Transaction.Currency,
+			Description:   result.Transaction.Description,
+			CreatedAt:     result.Transaction.CreatedAt.Format(time.RFC3339),
+			UpdatedAt:     result.Transaction.UpdatedAt.Format(time.RFC3339),
+		},
+	}
+
+	a.respond(w, http.StatusOK, resp)
+}
+
+func (a *APIImpl) createWithdrawal(w http.ResponseWriter, r *http.Request) {
+	userID, _ := r.Context().Value(HeaderUserID).(string)
+
+	params, err := createWithdrawalParams(r)
+	if err != nil {
+		a.respondError(w, http.StatusBadRequest, err, fmt.Sprintf("Invalid body request %+v", err))
+		return
+	}
+
+	result, err := a.transactioner.CreateWithdrawal(userID, *params)
+	if err != nil {
+		a.respondError(w, http.StatusBadRequest, err, fmt.Sprintf("Failed to create withdrawal: %+v", err))
+		return
+	}
+
+	resp := CreateWithdrawalResponse{
 		Transaction: Transaction{
 			TransactionID: result.Transaction.TransactionID,
 			Status:        result.Transaction.Status,
@@ -151,6 +154,22 @@ func createDepositParams(r *http.Request) (*transaction.CreateDepositRequest, er
 	}
 
 	result := &transaction.CreateDepositRequest{
+		TransactionID: req.TransactionID,
+		AccountNumber: req.AccountNumber,
+		Amount:        req.Amount,
+		Currency:      req.Currency,
+		Description:   req.Description,
+	}
+	return result, nil
+}
+
+func createWithdrawalParams(r *http.Request) (*transaction.CreateWithdrawalRequest, error) {
+	var req CreateWithdrawalRequest
+	if err := parseBody(r, &req); err != nil {
+		return nil, err
+	}
+
+	result := &transaction.CreateWithdrawalRequest{
 		TransactionID: req.TransactionID,
 		AccountNumber: req.AccountNumber,
 		Amount:        req.Amount,

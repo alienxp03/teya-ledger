@@ -24,6 +24,18 @@ type CreateDepositResponse struct {
 	Transaction Transaction
 }
 
+type CreateWithdrawalRequest struct {
+	TransactionID string
+	AccountNumber string
+	Amount        int
+	Currency      string
+	Description   string
+}
+
+type CreateWithdrawalResponse struct {
+	Transaction Transaction
+}
+
 type Transaction struct {
 	TransactionID string
 	Status        string

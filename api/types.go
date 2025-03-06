@@ -22,6 +22,18 @@ type CreateDepositResponse struct {
 	Transaction Transaction `json:"transaction"`
 }
 
+type CreateWithdrawalRequest struct {
+	TransactionID string `validate:"required"`
+	AccountNumber string `validate:"required"`
+	Amount        int    `validate:"required,lte=0"`
+	Currency      string `validate:"required,oneof=MYR"`
+	Description   string `validate:"required"`
+}
+
+type CreateWithdrawalResponse struct {
+	Transaction Transaction `json:"transaction"`
+}
+
 type Transaction struct {
 	TransactionID string `json:"transactionID"`
 	Status        string `json:"status"`

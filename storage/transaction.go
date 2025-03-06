@@ -55,3 +55,20 @@ func (m *MemoryStorage) CreateTransaction(transaction *Transaction) error {
 	m.transactions = append(m.transactions, transaction)
 	return nil
 }
+
+func (m *MemoryStorage) CreateWithdrawal(transaction *Transaction) (*Transaction, error) {
+	// Ideally should be handled by a unique constraint
+	for _, transactionData := range m.transactions {
+		if transactionData.TransactionID == transaction.TransactionID {
+			return nil, errors.New("transaction already exists")
+		}
+	}
+
+	now := time.Now()
+	transaction.CreatedAt = now
+	transaction.UpdatedAt = now
+
+	m.transactions = append(m.transactions, transaction)
+
+	return transaction, nil
+}

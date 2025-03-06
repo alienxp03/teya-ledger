@@ -8,6 +8,7 @@ type Storage interface {
 	GetTransactions(userID, accountNumber string, limit, page int) ([]*Transaction, error)
 
 	CreateDeposit(transaction *Transaction) (*Transaction, error)
+	CreateWithdrawal(transaction *Transaction) (*Transaction, error)
 }
 
 type MemoryStorage struct {
